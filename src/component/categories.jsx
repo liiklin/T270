@@ -10,6 +10,7 @@ import {
 	polyfill
 } from 'es6-promise';
 import fetch from 'isomorphic-fetch';
+import {categories as TreeDatas} from '../datas/datas.js';
 
 const TreeNode = Tree.TreeNode;
 
@@ -53,7 +54,7 @@ export default class categories extends React.Component {
 		super(props);
 		this.state = {
 			treeData: [{
-				name: "法律",
+				name: "合同",
 				key: 0,
 				isLeaf: false
 			}],
@@ -63,10 +64,26 @@ export default class categories extends React.Component {
 		};
 	}
 	componentDidMount() {
-		fetch(`${this.state.url}/categories`)
-			.then(res => res.json())
-			.then(res => {
-				let treeNodes = _.map(res, (val) => {
+		// fetch(`${this.state.url}/categories`)
+		// 	.then(res => res.json())
+		// 	.then(res => {
+		// 		let treeNodes = _.map(res, (val) => {
+		// 			return {
+		// 				name: val.name,
+		// 				key: val.id,
+		// 				isLeaf: true
+		// 			}
+		// 		});
+		// 		const treeData = [...this.state.treeData];
+		// 		getNewTreeData(treeData, "0", treeNodes, 2);
+		// 		this.setState({
+		// 			treeData
+		// 		});
+		// 	}).catch((error) => {
+		// 		console.error(error);
+		// 	});
+		// console.log(TreeDatas);
+				let treeNodes = _.map(TreeDatas, (val) => {
 					return {
 						name: val.name,
 						key: val.id,
@@ -78,19 +95,13 @@ export default class categories extends React.Component {
 				this.setState({
 					treeData
 				});
-			}).catch((error) => {
-				console.error(error);
-			});
 	}
 	onSelect(info) {
-		// console.log(info)
 		if (info.length) {
-			// console.log(`${this.state.url}/categories/${info[0]}/texts`)
 			fetch(`${this.state.url}/categories/${info[0]}/texts`)
 				.then(res => res.json())
 				.then(res => {
 					PubSub.publish('products', res);
-					// console.log(JSON.stringify(res))
 				}).catch((error) => {
 					console.error(error);
 				});
