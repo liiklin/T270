@@ -12,12 +12,19 @@ import {
 from 'antd';
 import {
 	polyfill
-} from 'es6-promise';
+}
+from 'es6-promise';
 import fetch from 'isomorphic-fetch';
 import _ from "underscore";
 import moment from "moment";
-import ReactMarkdown from "react-markdown";
+import Contract from "./contract";
+import PubSub from "pubsub-js";
 import './lists.less';
+
+import {
+	contract as contractData
+}
+from '../datas/datas.js';
 
 export default class lists extends React.Component {
 	static propTypes = {
@@ -30,26 +37,28 @@ export default class lists extends React.Component {
 		this.state = {
 			data: this.props.data,
 			url: this.props.url,
-			level: new Array(),
-			texts: new Array(),
+			selected: new Array(),
+			contracts: new Array(),
 			visible: false,
 			modalTitle: '',
 			modalContent: '',
 			pageSize: this.props.pageSize || 10,
 			pages: '',
-			footer : <div></div>
+			footer: '',
+			width: 600
 		};
 	}
 
 	componentDidMount() {
-		let texts = _.map(this.state.data.texts.slice(0, this.state.pageSize), (text, index) => {
+		// console.log(this.state.data);
+		let contracts = _.map(this.state.data.contracts.slice(0, this.state.pageSize), (text, index) => {
 			return (
-				<Row className="text" key={text.id}>
+				<Row className="text" key={text._id}>
 					<Col span="1" style={{textAlign:"center"}}>
 						{index+1}、
 					</Col>
 					<Col span="20">
-						{text.name}&nbsp;&nbsp;&nbsp;&nbsp;(颁布日期:{moment(text.issue_date).format("YYYY-MM-DD")})
+						{text.title}&nbsp;&nbsp;&nbsp;&nbsp;
 					</Col>
 					<Col span="3">
 						<Button type="primary" size="small" onClick={this.showModal.bind(this,text)}>查看全文</Button>
@@ -57,12 +66,17 @@ export default class lists extends React.Component {
 				</Row>
 			)
 		});
-		let pages = <Pagination size='small' pageSize={this.state.pageSize} onChange={this.onChange.bind(this)} total={this.state.data.texts.length} />;
+		let pages = <Pagination size='small' pageSize={this.state.pageSize} onChange={this.onChange.bind(this)} total={this.state.data.contracts.length} />;
 		this.setState({
-			level: this.state.data.level,
-			texts: texts,
+			selected: this.state.data.selected,
+			contracts: contracts,
 			pages: pages,
 		});
+		this.pubsub_token = PubSub.subscribe('_back', function(topic, product) {
+			this.setState({
+				...product
+			});
+		}.bind(this));
 	}
 
 	clickTitle(e) {
@@ -70,20 +84,24 @@ export default class lists extends React.Component {
 	}
 
 	showModal(text) {
-		fetch(`${this.state.url}/texts/${text.id}`)
-			.then(res => res.json())
-			.then(res => {
-				this.setState({
-					visible: true,
-					modalTitle: res.name,
-					modalContent: <ReactMarkdown source={res.content} />,
-				});
-			}).catch((error) => {
-				console.error(error);
-			});
+		// fetch(`${this.state.url}/contracts/${text._id}`)
+		// 	.then(res => res.json())
+		// 	.then(res => {
+		// 		this.setState({
+		// 			visible: true,
+		// 			modalTitle: res.name,
+		// 			modalContent: <ReactMarkdown source={res.content} />,
+		// 		});
+		// 	}).catch((error) => {
+		// 		console.error(error);
+		// 	});
+		// 	
+		this.setState({
+			visible: true,
+			modalContent: <Contract data={contractData} />,
+		});
 	}
 	handleOk() {
-		console.log('点击了确定');
 		this.setState({
 			visible: false,
 			modalTitle: '',
@@ -99,14 +117,14 @@ export default class lists extends React.Component {
 	}
 	onChange(page) {
 		console.log(page);
-		let texts = _.map(this.state.data.texts.slice((page - 1) * this.state.pageSize, page * this.state.pageSize), (text, index) => {
+		let contracts = _.map(this.state.data.contracts.slice((page - 1) * this.state.pageSize, page * this.state.pageSize), (text, index) => {
 			return (
-				<Row className="text" key={text.id}>
+				<Row className="text" key={text._id}>
 					<Col span="1" style={{textAlign:"center"}}>
 						{index+1}、
 					</Col>
 					<Col span="20">
-						{text.name}&nbsp;&nbsp;&nbsp;&nbsp;(颁布日期:{moment(text.issue_date).format("YYYY-MM-DD")})
+						{text.title}&nbsp;&nbsp;&nbsp;&nbsp;
 					</Col>
 					<Col span="3">
 						<Button type="primary" size="small" onClick={this.showModal.bind(this,text)}>查看全文</Button>
@@ -115,8 +133,8 @@ export default class lists extends React.Component {
 			)
 		});
 		this.setState({
-			level: this.state.data.level,
-			texts: texts,
+			selected: this.state.data.selected,
+			contracts: contracts,
 		});
 	}
 	render() {
@@ -127,12 +145,12 @@ export default class lists extends React.Component {
 						<span className="title">
 							<a title="点击进入高级检索" 
 							onClick={this.clickTitle.bind(this)}>
-							{this.state.data?this.state.data.level.name:''}&nbsp;&nbsp;&nbsp;&nbsp;(共{this.state.data.texts.length}篇) 
+							{this.state.data?this.state.data.selected.name:''}&nbsp;&nbsp;&nbsp;&nbsp;(共{this.state.data.contracts.length}篇) 
 							</a>
 						</span>
 					</div>
 					<div className="lists">
-						{this.state.texts}
+						{this.state.contracts}
 						<Row className="text pages">
 							<Col span="1">
 								&nbsp;
@@ -149,6 +167,8 @@ export default class lists extends React.Component {
 				<div>
 			        <Modal title={this.state.modalTitle} visible={this.state.visible}
 			          footer={this.state.footer}
+			          width={this.state.width}
+			          style={{ top: 20 }}
 			          onOk={this.handleOk.bind(this)} onCancel={this.handleCancel.bind(this)}>
 						{this.state.modalContent}
 			        </Modal>

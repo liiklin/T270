@@ -8,9 +8,14 @@ import _ from "underscore";
 import PubSub from "pubsub-js";
 import {
 	polyfill
-} from 'es6-promise';
+}
+from 'es6-promise';
 import fetch from 'isomorphic-fetch';
-import {categories as TreeDatas} from '../datas/datas.js';
+
+import {
+	categories as TreeDatas, contracts
+}
+from '../datas/datas.js';
 
 const TreeNode = Tree.TreeNode;
 
@@ -83,34 +88,43 @@ export default class categories extends React.Component {
 		// 		console.error(error);
 		// 	});
 		// console.log(TreeDatas);
-				let treeNodes = _.map(TreeDatas, (val) => {
-					return {
-						name: val.name,
-						key: val.id,
-						isLeaf: true
-					}
-				});
-				const treeData = [...this.state.treeData];
-				getNewTreeData(treeData, "0", treeNodes, 2);
-				this.setState({
-					treeData
-				});
+		let treeNodes = _.map(TreeDatas, (val) => {
+			return {
+				name: val.name,
+				key: val.id,
+				isLeaf: true
+			}
+		});
+		const treeData = [...this.state.treeData];
+		getNewTreeData(treeData, "0", treeNodes, 2);
+		this.setState({
+			treeData
+		});
 	}
 	onSelect(info) {
 		if (info.length) {
-			fetch(`${this.state.url}/categories/${info[0]}/texts`)
-				.then(res => res.json())
-				.then(res => {
-					PubSub.publish('products', res);
-				}).catch((error) => {
-					console.error(error);
+			// 	fetch(`${this.state.url}/categories/${info[0]}/texts`)
+			// 		.then(res => res.json())
+			// 		.then(res => {
+			// 			PubSub.publish('products', res);
+			// 		}).catch((error) => {
+			// 			console.error(error);
+			// 		});
+			// console.log(info);
+			let index = info[0] - 1;
+			if (index > -1) {
+				PubSub.publish('products', {
+					contracts: contracts,
+					selected: TreeDatas[info[0] - 1]
 				});
+			}
 			let expand = (info == this.state.expanded) ? [] : info
 			this.setState({
 				selected: info,
 				expanded: info
 			});
 		}
+
 	}
 	render() {
 		const loop = data => data.map((item) => {
